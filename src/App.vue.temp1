@@ -1,0 +1,419 @@
+<template>
+  <div id="app">
+    <!--<div ref="order" style="float: left;margin-left: 10px; padding: 10px;">
+      <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 2px;">
+        <tbody>
+          <tr>
+            <td style="text-align:right;font-size:15px;">单位：元</td>
+          </tr>
+        </tbody>
+      </table>
+      <table align="center" width="180" cellpadding="0" cellspacing="0" class="tablebprint4" style="margin: 2px;">
+        <tbody>
+          <tr>
+            <td colspan="3" class="print2" style="text-align:center;color:red;font-size:18px;">七星彩</td>
+          </tr>
+          <tr>
+            <td colspan="3" class="print3">时间:<span id="_datetime">{{time}}</span>
+              <br>会员:<span id="_user">{{member}}</span>
+              <br>编号:<span id="_orderid">{{number}}</span></td>
+          </tr>
+          <tr class="print2">
+            <td style="text-align:center;">号码</td>
+            <td style="text-align:center;">赔率</td>
+            <td style="text-align:center;">金额</td>
+          </tr>
+        </tbody>
+        <tbody id="orderlist">
+          <tr v-for="(item, index) in list" @click="setIndex(index)" bgcolor="#ffffff" class="print2" style="height:28px;line-height:19px;">
+            <td style="text-align:center;">{{item.no | uppercase}}</td>
+            <td style="text-align:center;">1:{{item.odds}}</td>
+            <td style="text-align:center;">{{item.money}}</td>
+          </tr>
+        </tbody>
+        <tbody>
+          <tr class="print5">
+            <td colspan="3">笔数<span id="_bscount">{{count}}</span> 总金额<span id="_allmoney">{{sum}}</span></td>
+          </tr>
+          <tr>
+            <td align="center" style="text-align:center;" class="Noprint" colspan="3">
+              <input @click="clear" class="printbut Noprint" type="button" value="清 空"> &nbsp;&nbsp;&nbsp;&nbsp;
+              <input @click="print" class="printbut Noprint" type="button" value="打 印">
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <span class='periods'>第 {{periods}} 期,3天內有效!!</span>
+    </div>-->
+    <!--<iframe style="display:none" src="http://5j.201700333.com/app.html"></iframe>-->
+    <iframe class="iframe" frameborder="0" marginwidth="0" marginheight="0" id="leftprint" name="leftprint" scrolling="yes" src=""></iframe>
+
+    <div style="float: right;margin-left: 10px;">
+      <ul>
+        <!--<li>
+          会员信息
+        </li>
+        <li>
+          <span>会员</span>
+          <input v-model='member' type="text" />
+        </li>
+        <li>
+          <span>期数</span>
+          <input v-model='periods' type="text" />
+        </li>-->
+        <li>
+          <span>服务器</span>
+          <input v-model='server' type="text" />
+        </li>
+        <!--<li>
+          <span>sid</span>
+          <input v-model='sid' type="text" />
+        </li>-->
+        <li>
+          <button @click="save">刷新</button>
+        </li>
+      </ul>
+
+      <!--<ul>
+        <li>
+          奖票信息，可同步
+        </li>
+        <li>
+          <span>时间</span>
+          <input v-model='time' type="text" />
+        </li>
+        <li>
+          <span>编号</span>
+          <input v-model='number' type="text" />
+        </li>
+        <li>
+          <span>笔数</span>
+          <input v-model='count' type="text" />
+        </li>
+        <li>
+          <span>总额</span>
+          <input v-model='sum' type="text" />
+        </li>
+      </ul>-->
+
+      <ul>
+        <li>
+          <span>号码</span>
+          <input v-model='list[index].no' type="text" />
+        </li>
+        <li>
+          <span>赔率</span>
+          <input v-model='list[index].odds' type="text" />
+        </li>
+        <li>
+          <span>金额</span>
+          <input v-model='list[index].money' type="text" />
+        </li>
+        <li>
+          <button @click="change">修改</button>
+          <button @click="refund">退码</button>
+        </li>
+      </ul>
+
+      <ul>
+        <li>
+          <span>号码</span>
+          <textarea rows="3" cols="40" v-model='no' type="text" placeholder="格式：123.456X789=16" />
+        </li>
+        <li>
+          <button @click="buy">买码</button>
+          <button @click="print">打印</button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</template>
+
+<script>
+  import 'babel-polyfill'
+  import moment from 'moment'
+  import axios from 'axios'
+  import html2canvas from './libs/html2canvas'
+  import {
+    uuid
+  }
+  from './libs/utils'
+  import qs from 'qs'
+  import jsonp from 'jsonp'
+  import VConsole from 'vconsole'
+
+  var vconsole = new VConsole()
+  console.log(vconsole)
+  axios.interceptors.request.use((config) => {
+    // 超时设置
+    config.timeout = config.timeout || 60000
+    config.headers["Access-Control-Allow-Origin"] = "*"
+    config.headers["Access-Control-Allow-Methods"] = "POST"
+      // 转换 post 中的 data
+    config.transformRequest = [(data) => {
+      (!!data) && (data = qs.stringify(data))
+      return data
+    }]
+    return config;
+  }, (error) => {
+    // Do something with request error 
+    return Promise.reject(error);
+  })
+
+  window.kk = res => console.log(res)
+
+  const MAX = 1
+  const TIME = moment().format('YYYY-MM-DD hh:mm')
+  const MEMBER = localStorage.getItem('member') || 'A2114'
+  const NUMBER = '533420926' + uuid(8, 10)
+  const PERIODS = localStorage.getItem('periods') || '17113'
+  const SERVER = localStorage.getItem('server') || ''
+  const SID = localStorage.getItem('sid') || ''
+  let list = localStorage.getItem('list') || '[{"no": "","odds": "","money": ""}]'
+  list = JSON.parse(list)
+
+
+
+  function getBase64Image(img) {
+    var canvas = document.getElementById("myCanvas");
+    canvas.width = img.width;
+    canvas.height = img.height;
+    var ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0, img.width, img.height);
+    var ext = img.src.substring(img.src.lastIndexOf(".") + 1).toLowerCase();
+    var dataURL = canvas.toDataURL("image/" + ext);
+    return dataURL;
+  }
+
+  const suffix = {
+    kk: [',|0,1,0,0,0,0,,0,0,0,0,,0,0,0,0,,0,0,0,0,,|0,0,,||,,,|0,0,0,0,|0,0,,,|0,0,||||0,0,|||0,0,,,,|0,0,0,0,0,0,|0,0,0,0,0,0,|||', '|0,1,0,0,0,0,,0,0,0,0,,0,0,0,0,,0,0,0,0,,|0,0,,||,,,|0,0,0,0,|0,0,,,|0,0,||0,0,||0,0,|0,0,||0,0,,,,|0,0,0,0,0,0,|0,0,0,0,0,0,|||', '|0,1,0,0,0,0,,0,0,0,0,,0,0,0,0,,0,0,0,0,,|0,0,,|,,|,,,||0,0,,,|0,0,|0,0,|0,0,|0,0,|0,0,|0,0,|0,0,|0,0,,,,|0,0,0,0,0,0,|0,0,0,0,0,0,|||'],
+    a: ['|0,1,0,0,0,0,,0,0,0,0,,0,0,0,0,,0,0,0,0,,|0,0,,||,,,|0,0,0,0,|0,0,,,|0,0,||||0,0,|||0,0,,,,|0,0,0,0,0,0,|0,0,0,0,0,0,|||', '|0,1,0,0,0,0,,0,0,0,0,,0,0,0,0,,0,0,0,0,,|0,0,,||,,,|0,0,0,0,|0,0,,,|0,0,||0,0,||0,0,|0,0,||0,0,,,,|0,0,0,0,0,0,|0,0,0,0,0,0,|||', '|0,1,0,0,0,0,,0,0,0,0,,0,0,0,0,,0,0,0,0,,|0,0,,|,,|,,,||0,0,,,|0,0,|0,0,|0,0,|0,0,|0,0,|0,0,|0,0,|0,0,,,,|0,0,0,0,0,0,|0,0,0,0,0,0,|||']
+  }
+
+  export default {
+    name: 'app',
+    data() {
+      return {
+        time: TIME,
+        member: MEMBER,
+        number: NUMBER,
+        count: '',
+        sum: '',
+        periods: PERIODS,
+        server: SERVER,
+        sid: SID,
+        list,
+        index: 0,
+        no: ''
+      }
+    },
+    created() {
+      this.change()
+    },
+    methods: {
+      // 保存列表
+      saveList() {
+          let list = this.list
+          list = JSON.stringify(list)
+          localStorage.setItem('list', list)
+        },
+        // 点击号码
+        setIndex(index) {
+          this.index = index
+        },
+        // 清空
+        clear() {
+          localStorage.removeItem('list')
+          window.location.reload();
+        },
+        // 打印
+        print() {
+          let doms = document.getElementById('leftprint');
+          //          let copyDom = this.$refs.order.cloneNode(true);
+          let copyDom = doms.cloneNode(true);
+          document.body.appendChild(copyDom);
+          let self = this
+          html2canvas(copyDom, {
+            onrendered: function (canvas) {
+              copyDom.remove();
+              // 生成图片，保存下载
+              let imgUri = canvas.toDataURL("image/png").replace("image/png", "application/octet-stream")
+              let saveLink = document.createElement('a')
+              saveLink.href = imgUri
+              saveLink.download = "fileName.png"
+              saveLink.click()
+            },
+            background: '#fff'
+          })
+        },
+        // 修改
+        change() {
+          let sum = 0
+          let len = this.list.length
+          this.list.forEach(item => {
+            sum += +item.money
+          })
+          this.count = len
+          this.sum = sum
+          this.saveList()
+        },
+        // 保存会员信息
+        save() {
+          let iframe = document.getElementById('leftprint')
+            // iframe.src = 'http://5j.201700333.com/appprint.html'
+          iframe.src = 'http://5j.201700333.com/app.html'
+          return;
+          let {
+            member, periods, server, sid
+          } = this
+          localStorage.setItem('member', member)
+          localStorage.setItem('periods', periods)
+          localStorage.setItem('server', server)
+          localStorage.setItem('sid', sid)
+        },
+        // 买码
+        buy() {
+          let self = this
+          let server = this.server
+          let label = 'a'
+          let no = this.no.toUpperCase()
+          let nos = no.split(/[,|，]/)
+          let i = 0
+          let len = nos.length
+          let number = ''
+          let money = ''
+          let preMoney = 1
+          let numbers = ''
+          if (/wk/.test(server)) {
+            label = 'kk'
+          }
+          self.reqList = []
+          nos.forEach(async item => {
+            let result = ['']
+            let newResult = []
+            let items = ''
+
+            // 请求信息
+            let post_number_money = ''
+            let post_money = ''
+            let selectlogs = '0,1,'
+            let selectlogsclassid = ''
+            let selectnumbertotal_hidden = ''
+
+            money = item.match(/=(\d+)$/)
+            number = money ? money[0] : ''
+
+            money = money ? money[1] : preMoney
+            number = item.replace(number, '')
+
+            numbers = number.match(/\d+|[X]|[全]/g)
+            numbers.forEach(item => {
+              item = item.replace('全', '0123456789')
+              selectlogs += item + ','
+              items = item.split('').sort()
+              items.forEach(one => {
+                result.forEach(temp => {
+                  newResult.push(temp + one)
+                })
+              })
+              result = newResult.slice(0)
+              newResult = []
+            })
+
+            selectnumbertotal_hidden = result.length
+            post_number_money = result.join(',')
+            preMoney = post_money = +money
+            selectlogsclassid = 3 - (selectlogs.match(/X/g) || []).length
+            selectlogs = selectlogs.replace(/X/g, '')
+            selectlogs += suffix[label][selectlogsclassid - 1]
+
+            self.reqList.push({
+              post_number_money,
+              post_money,
+              selectlogsclassid,
+              selectnumbertotal_hidden,
+              selectlogs
+            })
+          })
+          this.ajax()
+        },
+        async ajax() {
+          for (let form of this.reqList) {
+            await this.kuaixuan(form)
+          }
+        },
+        // 退码
+        refund() {
+          console.log('腿麻')
+        },
+        kuaixuan(form) {
+          return new Promise((resolve, reject) => {
+            form.action = 'soonselectnumber'
+            form.sizixian = '0'
+            form.zjzc = '0'
+            form.strarray = ''
+            form.lujingstat = '3'
+            let sform = qs.stringify(form)
+            let url = this.server + '/appindexajax.php'
+            let tuimaid = this.no
+            let iframe = document.createElement("iframe")
+            url += `?${sform}`
+            iframe.src = url
+            iframe.onload = (event) => {
+              if (!event) {
+                reject('ERROR')
+              }
+              console.log(`${form.post_number_money}: ${form.post_money}组`)
+              document.body.removeChild(iframe)
+              iframe.remove()
+              let timer = setTimeout(() => {
+                clearTimeout(timer)
+                resolve('OK')
+              }, 1000)
+            }
+            document.body.appendChild(iframe)
+          })
+        },
+        tuima() {
+          let form = {
+            action: 'soonselectnumber', // 快选
+            post_number_money: '1XX1,2XX1', // 号码
+            post_money: 3, // 金额
+            sizixian: 0, // 四字现
+            selectlogsclassid: 1, // 二字:1, 三字:2, 四字:3
+            zjzc: 0,
+            selectnumbertotal_hidden: 2, // 生成号码数量
+            selectlogs: '0,1,12,,,1,|0,1,0,0,0,0,,0,0,0,0,,0,0,0,0,,0,0,0,0,,|0,0,,||,,,|0,0,0,0,|0,0,,,|0,0,||||0,0,|||0,0,,,,|0,0,0,0,0,0,|0,0,0,0,0,0,|||', // 快选文本内容 ·0,1,千位,百位,十位,个位,...`, 二字、三字、四字后面不尽相同, kk 与 A 不尽相同
+            strarray: '',
+            lujingstat: 3
+          }
+          let sform = qs.stringify(form)
+          let url = this.server + '/appindexajax.php'
+          let tuimaid = this.no
+          let iframe = document.createElement("iframe")
+          url += `?${sform}`
+          iframe.src = url
+          iframe.onload = () => {
+            console.log('OK')
+            document.body.removeChild(iframe)
+            iframe.remove()
+          }
+          document.body.appendChild(iframe)
+        }
+    }
+  }
+</script>
+
+<style lang="scss">
+  html,
+  body,
+  #app {
+    height: 100%;
+    margin: 0;
+  }
+  
+  .iframe {
+    height: 100%;
+    background: #f2f7ee;
+  }
+</style>

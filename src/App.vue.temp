@@ -1,0 +1,637 @@
+<template>
+  <div id="app">
+    <div ref="order" style="float: left;margin-left: 10px; padding: 10px;">
+      <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 2px;">
+        <tbody>
+          <tr>
+            <td style="text-align:right;font-size:15px;">单位：元</td>
+          </tr>
+        </tbody>
+      </table>
+      <table align="center" width="180" cellpadding="0" cellspacing="0" class="tablebprint4" style="margin: 2px;">
+        <tbody>
+          <tr>
+            <td colspan="3" class="print2" style="text-align:center;color:red;font-size:18px;">七星彩</td>
+          </tr>
+          <tr>
+            <td colspan="3" class="print3">时间:<span id="_datetime">{{time}}</span>
+              <br>会员:<span id="_user">{{member}}</span>
+              <br>编号:<span id="_orderid">{{number}}</span></td>
+          </tr>
+          <tr class="print2">
+            <td style="text-align:center;">号码</td>
+            <td style="text-align:center;">赔率</td>
+            <td style="text-align:center;">金额</td>
+          </tr>
+        </tbody>
+        <tbody id="orderlist">
+          <tr v-for="(item, index) in list" @click="setIndex(index)" bgcolor="#ffffff" class="print2" style="height:28px;line-height:19px;">
+            <td style="text-align:center;">{{item.no | uppercase}}</td>
+            <td style="text-align:center;">1:{{item.odds}}</td>
+            <td style="text-align:center;">{{item.money}}</td>
+          </tr>
+        </tbody>
+        <tbody>
+          <tr class="print5">
+            <td colspan="3">笔数<span id="_bscount">{{count}}</span> 总金额<span id="_allmoney">{{sum}}</span></td>
+          </tr>
+          <tr>
+            <td align="center" style="text-align:center;" class="Noprint" colspan="3">
+              <input @click="clear" class="printbut Noprint" type="button" name="numClear" id="numClear" value="清 空"> &nbsp;&nbsp;&nbsp;&nbsp;
+              <input @click="print" class="printbut Noprint" type="button" name="numprint" id="numprint" value="打 印">
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <span class='periods'>第 {{periods}} 期,3天內有效!!</span>
+    </div>
+
+    <div ref="image" style="float: left;margin-left: 10px;width: 206px;">
+      <p>
+        打印结果：
+        <button @click="print">打印</button>
+        <button @click="maima">买码</button>
+        <button @click="tuima">退码</button>
+      </p>
+    </div>
+
+    <div style="float: left;margin-left: 10px;width: 206px;">
+      <table align="center" width="180" cellpadding="0" cellspacing="0" class="tablebprint4" style="margin: 2px;">
+        <tbody>
+          <tr class="print2">
+            <td style="text-align:center;">头尾</td>
+            <td v-for="item in heads" style="text-align:center;">{{item}}</td>
+          </tr>
+        </tbody>
+        <tbody id="orderlist">
+          <tr v-for="head in heads" bgcolor="#ffffff" class="print2" style="height:28px;line-height:19px;">
+            <td style="text-align:center;">{{head}}</td>
+            <td v-for="wei in heads" class="tw-item" :class="{ 'red':nums[head][wei]===1 }">
+              <div class="no">{{head+'XX'+wei}}</div>
+              <div>{{nums[head][wei]}}</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="float: right;margin-left: 10px;">
+      <ul>
+        <li>
+          <span>会员</span>
+          <input v-model='member' type="text" />
+        </li>
+        <li>
+          <span>期数</span>
+          <input v-model='periods' type="text" />
+        </li>
+        <li>
+          <span>默认</span>
+          <input v-model='dodds' type="text" />
+        </li>
+
+        <li>
+          <span>服务器</span>
+          <input v-model='server' type="text" />
+        </li>
+        <li>
+          <span>sid</span>
+          <input v-model='sid' type="text" />
+        </li>
+        <li>
+          <button @click="save">保存</button>
+        </li>
+      </ul>
+
+      <ul>
+        <li>
+          <span>时间</span>
+          <input v-model='time' type="text" />
+        </li>
+        <li>
+          <span>编号</span>
+          <input v-model='number' type="text" />
+        </li>
+        <li>
+          <span>赔率</span>
+          <input v-model='list[index].odds' type="text" />
+        </li>
+        <li>
+          <span>金额</span>
+          <input v-model='list[index].money' type="text" />
+        </li>
+        <li>
+          <button @click="del">删除</button>
+        </li>
+      </ul>
+
+      <ul>
+        <li>
+          <span>号码</span>
+          <input v-model='no' type="text" />
+        </li>
+        <li>
+          <span>赔率</span>
+          <input v-model='odds' type="text" />
+        </li>
+        <li>
+          <span>金额</span>
+          <input v-model='money' type="text" />
+        </li>
+        <li>
+          <button @click="kuaida">快打</button>
+        </li>
+      </ul>
+
+      <ul>
+        <li>
+          <span> 千 </span>
+          <input v-model='qian' type="text" />
+        </li>
+        <li>
+          <span> 百 </span>
+          <input v-model='bai' type="text" />
+        </li>
+        <li>
+          <span> 十 </span>
+          <input v-model='shi' type="text" />
+        </li>
+        <li>
+          <span> 个 </span>
+          <input v-model='ge' type="text" />
+        </li>
+        <li>
+          <span>赔率</span>
+          <input v-model='odds' type="text" />
+        </li>
+        <li>
+          <span>金额</span>
+          <input v-model='money' type="text" />
+        </li>
+        <li>
+          <button @click="kuaixuan">快选</button>
+          <button @click="chi">吃</button>
+          <button @click="gai">改</button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</template>
+
+<script>
+  import moment from 'moment'
+  import html2canvas from './libs/html2canvas'
+  import axios from 'axios'
+  import qs from 'qs'
+  // import FileSaver from 'file-saver'
+
+  const MAX = 1;
+
+  function uuid(len, radix) {
+    var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
+    var uuid = [],
+      i;
+    radix = radix || chars.length;
+
+    if (len) {
+      // Compact form
+      for (i = 0; i < len; i++) uuid[i] = chars[0 | Math.random() * radix];
+    } else {
+      // rfc4122, version 4 form
+      var r;
+
+      // rfc4122 requires these characters
+      uuid[8] = uuid[13] = uuid[18] = uuid[23] = '-';
+      uuid[14] = '4';
+
+      // Fill in random data.  At i==19 set the high bits of clock sequence as
+      // per rfc4122, sec. 4.1.5
+      for (i = 0; i < 36; i++) {
+        if (!uuid[i]) {
+          r = 0 | Math.random() * 16;
+          uuid[i] = chars[(i == 19) ? (r & 0x3) | 0x8 : r];
+        }
+      }
+    }
+
+    return uuid.join('');
+  }
+
+  axios.interceptors.request.use((config) => {
+    // Do something before request is sent 
+    // 超时设置
+    config.timeout = config.timeout || 60000
+
+    // 调用测试环境接口
+
+    // 转换 post 中的 data
+    config.transformRequest = [(data) => {
+      (!!data) && (data = qs.stringify(data))
+      return data
+    }]
+
+    return config;
+  }, (error) => {
+    // Do something with request error 
+    return Promise.reject(error);
+  })
+
+  export default {
+    name: 'app',
+    data() {
+      let member = localStorage.getItem('member') || 'A2114';
+      let periods = localStorage.getItem('periods') || '17113';
+      let dodds = localStorage.getItem('dodds') || '93';
+      let time = moment().format('YYYY-MM-DD hh:mm');
+      let server = localStorage.getItem('server') || ''
+      let sid = localStorage.getItem('sid') || ''
+      let number = uuid(8, 10)
+      let heads = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+      let nums = localStorage.getItem('nums')
+      if (nums) {
+        nums = JSON.parse(nums)
+      } else {
+        nums = []
+        for (let i = 0; i < 10; i++) {
+          nums[i] = []
+          for (let j = 0; j < 10; j++) {
+            nums[i][j] = ''
+          }
+        }
+      }
+      number = '533420926' + number;
+      return {
+        time: time,
+        member: member,
+        periods: periods,
+        dodds: dodds,
+        number: number,
+        list: [{
+          no: '',
+          odds: '',
+          money: ''
+        }],
+        count: '',
+        sum: '',
+        index: 0,
+        no: '',
+        odds: '93',
+        money: '',
+        qian: '',
+        bai: '',
+        shi: '',
+        ge: '',
+        server,
+        sid,
+        heads,
+        nums
+      }
+    },
+    methods: {
+      setIndex(index) {
+          this.index = index;
+        },
+        clear() {
+          this.list = [{
+            no: '',
+            odds: '',
+            money: ''
+          }];
+          this.index = 0;
+          this.time = '';
+          this.number = '';
+          this.count = '';
+          this.sum = '';
+        },
+        print() {
+          let copyDom = this.$refs.order.cloneNode(true);
+          document.body.appendChild(copyDom);
+          let self = this
+          html2canvas(copyDom, {
+            onrendered: function (canvas) {
+              self.$refs.image.appendChild(canvas);
+              copyDom.remove();
+
+              /*canvas.toBlob(function (blob) {
+                FileSaver.saveAs(blob, "fileName.png");
+              });*/
+              //              Fil.saveAs(new Blob([s2ab(response)],{type:"application/octet-stream"}), fileName)
+              // chrome, 保存图片
+              var imgUri = canvas.toDataURL("image/png").replace("image/png", "application/octet-stream"); // 获取生成的图片的url 　
+              var saveLink = document.createElement('a');　　　　
+              saveLink.href = imgUri;　　　　
+              saveLink.download = "fileName.png";
+              saveLink.click();
+            },
+            background: '#fff'
+          })
+        },
+        del() {
+          let len, sum, index, money
+          len = this.list.length
+          sum = +this.sum
+          index = this.index
+          if (len > 1) {
+            money = this.list[index].money
+            sum -= money
+            this.list.splice(index, 1);
+            this.sum = this.count = sum + ''
+          }
+        },
+        save() {
+          let member = this.member;
+          let periods = this.periods;
+          let dodds = this.dodds;
+          let server = this.server;
+          let sid = this.sid;
+          localStorage.setItem('member', member);
+          localStorage.setItem('periods', periods);
+          localStorage.setItem('dodds', dodds);
+          localStorage.setItem('server', server);
+          localStorage.setItem('sid', sid);
+        },
+        kuaida() {
+          if (!this.number) {
+            let time = moment().format('YYYY-MM-DD hh:mm');
+            let number = uuid(8, 10);
+            number = '533420926' + number;
+            this.time = time;
+            this.number = number;
+          }
+          let item = {};
+          item.no = this.no;
+          item.odds = this.odds;
+          let money = item.money = this.money;
+          let sum = +this.sum || 0;
+          if (this.list[0].no) {
+            this.list.push(item);
+          } else {
+            this.list = [item];
+          }
+          sum += +money;
+          this.count = this.list.length;
+          this.sum = sum;
+          this.no = '';
+        },
+        kuaixuan() {
+          let time, number, qian, bai, shi, ge, odds, money, sum, noList = ['']
+          if (!this.number) {
+            time = moment().format('YYYY-MM-DD hh:mm')
+            number = uuid(8, 10)
+            number = '533420926' + number
+            this.time = time
+            this.number = number
+          }
+
+          qian = this.qian.split('')
+          bai = this.bai.split('')
+          shi = this.shi.split('')
+          ge = this.ge.split('');
+          !qian[0] && (qian = ['X']);
+          !bai[0] && (bai = ['X']);
+          !shi[0] && (shi = ['X']);
+          !ge[0] && (ge = ['X']);
+
+          odds = this.odds;
+          money = +this.money;
+          sum = +this.sum || 0;
+
+          (function (list) {
+            let result = [],
+              temp
+            list.forEach(nos => {
+              nos.forEach(no => {
+                temp = noList.map(item => {
+                  return no + item
+                })
+                result = result.concat(temp)
+              })
+              noList = result.slice(0)
+              result = []
+            })
+          }([ge, shi, bai, qian]));
+
+          noList.forEach(no => {
+            this.list.push({
+              no,
+              odds,
+              money
+            })
+            sum += money
+          })
+
+          !this.list[0].no && this.list.shift()
+          this.count = this.list.length
+          this.sum = sum
+
+          this.qian = ''
+          this.bai = ''
+          this.shi = ''
+          this.ge = ''
+        },
+        maima() {
+          let url = this.server + '/appindexajax.php',
+            sid = this.sid,
+            no = this.no,
+            money = this.money,
+            post_number = no + ',' + money + ',0',
+            list
+          axios.post(url, {
+              action: 'soonsend',
+              post_number,
+              sizixian: '0',
+              sid,
+              inajax: '1'
+            })
+            .then(function (response) {
+              list = response.data.orders.j
+              list = list.map(item => {
+                return {
+                  number: item.number,
+                  id: item.id
+                }
+              })
+              console.table(list)
+            })
+            .catch(function (error) {
+              console.log(error)
+            })
+        },
+        tuima() {
+          let url = this.server + '/appindexajax.php',
+            tuimaid = this.no
+          axios.post(url, {
+              action: 'ordertuima',
+              tuimaid
+            })
+            .then(function (response) {
+              console.log(response.data.s)
+            })
+            .catch(function (error) {
+              console.log(error)
+            })
+        },
+        chi() {
+          let head = +this.qian
+          let wei = +this.ge
+          let num = +this.nums[head][wei]
+          let money = +this.money
+          let sum = num + money
+          if (num === MAX) {
+            alert('该组头尾不能在吃了！！！')
+            return
+          }
+          if (sum > MAX) {
+            num = MAX - num
+            sum = MAX
+            alert('该组头尾只能被吃' + num + '组！！')
+          }
+          this.nums[head][wei] = sum
+          this.qian = ''
+          this.ge = ''
+          localStorage.setItem('nums', JSON.stringify(this.nums))
+        },
+        gai() {
+          let head = +this.qian
+          let wei = +this.ge
+          let money = +this.money
+          this.nums[head][wei] = money
+          this.qian = ''
+          this.ge = ''
+          localStorage.setItem('nums', JSON.stringify(this.nums))
+        }
+    }
+  }
+</script>
+
+<style lang="scss">
+  table {
+    white-space: normal;
+    line-height: normal;
+    font-weight: normal;
+    font-size: medium;
+    font-style: normal;
+    color: -internal-quirk-inherit;
+    text-align: start;
+    font-variant: normal normal;
+  }
+  
+  table {
+    -webkit-margin-start: auto;
+    -webkit-margin-end: auto;
+    width: 180px;
+    -webkit-border-horizontal-spacing: 0px;
+    -webkit-border-vertical-spacing: 0px;
+  }
+  
+  body,
+  td {
+    margin: 0px;
+    font-size: 12px;
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    text-align: left;
+  }
+  
+  td.print2,
+  .print2 td {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 15px;
+    height: 28px;
+    line-height: 19px;
+    background: #FFFFFF;
+    text-align: center;
+  }
+  
+  td.print3,
+  .print3 td {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 13px;
+  }
+  
+  td.print5,
+  .print5 td {
+    font-family: Verdana, Arial, Helvetica, sans-serif;
+    font-size: 15px;
+    height: 28px;
+    line-height: 19px;
+    background: #FFFFFF;
+    text-align: left;
+  }
+  
+  .tablebprint4 {
+    border: 2px solid #660000;
+    empty-cells: show;
+    border-collapse: collapse;
+  }
+  
+  .tablebprint4 td {
+    border-bottom: 1px solid #660000;
+    border-right: 1px solid #660000;
+    line-height: 22px;
+    height: 22px;
+    padding: 1px;
+    background: #FFFFFF;
+  }
+  
+  #orderprint {
+    height: auto;
+    width: 100%;
+    margin: 0px;
+    padding: 0;
+  }
+  
+  .printbut {
+    display: inline-block;
+    margin-bottom: 0;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    padding: 1px 1px;
+    height: 22px;
+    width: 65px;
+    font-size: 14px;
+    font-weight: normal;
+    line-height: 20px;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+  
+  #orderlist tr td dd {
+    display: none;
+  }
+  
+  .meunpage:link {
+    color: #0033cc;
+    font-weight: bold;
+  }
+  
+  .periods {
+    font-size: 15px;
+    display: table;
+    -webkit-margin-start: auto;
+    -webkit-margin-end: auto;
+    width: 180px;
+    -webkit-border-horizontal-spacing: 0px;
+    -webkit-border-vertical-spacing: 0px;
+  }
+  
+  ul li span {
+    display: inline-block;
+    width: 3em;
+    text-align: center;
+  }
+  
+  .tw-item {
+    text-align: center;
+    height: 44px !important;
+    font-size: larger;
+    .no {
+      color: #666;
+      font-size: smaller;
+    }
+  }
+  
+  .red {
+    background-color: #F00 !important;
+  }
+</style>
