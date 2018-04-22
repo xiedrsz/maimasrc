@@ -1,0 +1,10 @@
+action:soonselectnumber
+post_number_money:2X22
+post_money:2
+sizixian:0
+selectlogsclassid:2
+zjzc:0
+selectnumbertotal_hidden:1
+selectlogs:0,1,2,,2,2,|0,1,0,0,0,0,,0,0,0,0,,0,0,0,0,,0,0,0,0,,|0,0,,||,,,|0,0,0,0,|0,0,,,|0,0,||0,0,||0,0,|0,0,||0,0,,,,|0,0,0,0,0,0,|0,0,0,0,0,0,|||
+strarray:
+lujingstat:3

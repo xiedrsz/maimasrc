@@ -1,0 +1,179 @@
+html,
+body,
+#app {
+  top: 0px;
+  left: 0px;
+  bottom: 0px;
+  right: 0px;
+  height: 100%;
+  // overflow: hidden;
+  margin: 0;
+  padding: 0px;
+  border: 0px;
+  position: relative;
+  font-size: 12px;
+  font-family: arial;
+  min-width: 980px;
+}
+
+.iframe {
+  height: 100%;
+  width: 100%;
+}
+
+.tool-box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: #FFFFFF;
+  margin: 20px;
+}
+
+.big-btn {
+  width: 100px;
+  height: 40px;
+}
+
+// LL
+.bill {
+  position: absolute;
+  top: 262px;
+}
+
+table {
+  white-space: normal;
+  line-height: normal;
+  font-weight: normal;
+  font-size: medium;
+  font-style: normal;
+  color: -internal-quirk-inherit;
+  text-align: start;
+  font-variant: normal normal;
+}
+
+table {
+  -webkit-margin-start: auto;
+  -webkit-margin-end: auto;
+  width: 190px;
+  -webkit-border-horizontal-spacing: 0px;
+  -webkit-border-vertical-spacing: 0px;
+}
+
+body,
+td {
+  margin: 0px;
+  font-size: 12px;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  text-align: left;
+}
+
+td.print2,
+.print2 td {
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  height: 28px;
+  line-height: 19px;
+  background: #FFFFFF;
+  text-align: center;
+}
+
+td.print3,
+.print3 td {
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-size: 13px;
+}
+
+td.print5,
+.print5 td {
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  height: 28px;
+  line-height: 19px;
+  background: #FFFFFF;
+  text-align: left;
+}
+
+.tablebprint4 {
+  border: 1px solid #660000;
+  empty-cells: show;
+  border-collapse: collapse;
+  border-bottom: 2px solid #660000;
+  border-right: 2px solid #660000;
+}
+
+.tablebprint4 td {
+  border-bottom: 1px solid #660000;
+  border-right: 1px solid #660000;
+  line-height: 22px;
+  height: 22px;
+  padding: 1px;
+  background: #FFFFFF;
+}
+
+#orderprint {
+  height: auto;
+  width: 100%;
+  margin: 0px;
+  padding: 0;
+}
+
+.printbut {
+  display: inline-block;
+  margin-bottom: 0;
+  text-align: center;
+  vertical-align: middle;
+  cursor: pointer;
+  padding: 1px 1px;
+  height: 22px;
+  width: 65px;
+  font-size: 14px;
+  font-weight: normal;
+  line-height: 20px;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+#orderlist tr td dd {
+  display: none;
+}
+
+.meunpage:link {
+  color: #0033cc;
+  font-weight: bold;
+}
+
+.periods {
+  font-size: 15px;
+  display: table;
+  -webkit-margin-start: auto;
+  -webkit-margin-end: auto;
+  width: 190px;
+  -webkit-border-horizontal-spacing: 0px;
+  -webkit-border-vertical-spacing: 0px;
+}
+
+ul li span {
+  display: inline-block;
+  width: 4em;
+  text-align: center;
+}
+
+.tw-item {
+  text-align: center;
+  height: 44px !important;
+  font-size: larger;
+  .no {
+    color: #666;
+    font-size: smaller;
+  }
+}
+
+.red {
+  background-color: #F00 !important;
+}
+
+.input-no {
+  width: 3em;
+  border: none;
+  text-align: center;
+  font-size: 15px;
+}

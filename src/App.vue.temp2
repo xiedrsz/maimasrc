@@ -1,0 +1,387 @@
+<template>
+  <div id="app">
+    <iframe ref="iframe" class="iframe" frameborder="0" marginwidth="0" marginheight="0" scrolling="yes" src=""></iframe>
+    <div class="tool-box">
+      <button @click="show=!show" class="big-btn">{{show?'收起':'展开'}}</button>
+      <div v-show="show">
+        <ul>
+          <li>
+            <span>服务器1</span>
+            <input v-model='server1' type="text" />
+          </li>
+          <li>
+            <span>服务器2</span>
+            <input v-model='server2' type="text" />
+          </li>
+          <li>
+            当前服务期是： {{server}}
+            <button @click="switchover">切换</button>
+          </li>
+          <li>
+            <button @click="refresh">刷新</button>
+          </li>
+        </ul>
+        <ul>
+          <li>
+            <p>请求频率，若发现多个码只有第一个成功时，应将以下频率调高点</p>
+            <input v-model='speed' type="number" />
+            <button @click="removeStorage">清理缓存</button>
+          </li>
+          <li>
+            <p>日志</p>
+            <textarea ref="log" rows="5" cols="40" v-model='log' type="text" readonly />
+          </li>
+        </ul>
+        <ul>
+          <li>
+            <textarea rows="3" cols="40" v-model='no' type="text" placeholder="格式：123.456X789=16" />
+          </li>
+          <li>
+            <button @click="buy">买码</button>
+            <button @click="clear">清除</button>
+            <button @click="recognition">AI识别</button>
+            <button @click="getStorage">读取缓存</button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+  import 'babel-polyfill'
+  import qs from 'qs'
+  import { zh2num } from './libs/zh2num'
+  window.zh2num = zh2num
+  const SERVER = localStorage.getItem('server') || ''
+  const SERVER1 = localStorage.getItem('server1') || ''
+  const SERVER2 = localStorage.getItem('server2') || ''
+  const suffix = {
+    kk: [',|0,1,0,0,0,0,,0,0,0,0,,0,0,0,0,,0,0,0,0,,|0,0,,||,,,|0,0,0,0,|0,0,,,|0,0,||||0,0,|||0,0,,,,|0,0,0,0,0,0,|0,0,0,0,0,0,|||', '|0,1,0,0,0,0,,0,0,0,0,,0,0,0,0,,0,0,0,0,,|0,0,,||,,,|0,0,0,0,|0,0,,,|0,0,||0,0,||0,0,|0,0,||0,0,,,,|0,0,0,0,0,0,|0,0,0,0,0,0,|||', '|0,1,0,0,0,0,,0,0,0,0,,0,0,0,0,,0,0,0,0,,|0,0,,|,,|,,,||0,0,,,|0,0,|0,0,|0,0,|0,0,|0,0,|0,0,|0,0,|0,0,,,,|0,0,0,0,0,0,|0,0,0,0,0,0,|||'],
+    a: ['|0,1,0,0,0,0,,0,0,0,0,,0,0,0,0,,0,0,0,0,,|0,0,,||,,,|0,0,0,0,|0,0,,,|0,0,||||0,0,|||0,0,,,,|0,0,0,0,0,0,|0,0,0,0,0,0,|||', '|0,1,0,0,0,0,,0,0,0,0,,0,0,0,0,,0,0,0,0,,|0,0,,||,,,|0,0,0,0,|0,0,,,|0,0,||0,0,||0,0,|0,0,||0,0,,,,|0,0,0,0,0,0,|0,0,0,0,0,0,|||', '|0,1,0,0,0,0,,0,0,0,0,,0,0,0,0,,0,0,0,0,,|0,0,,|,,|,,,||0,0,,,|0,0,|0,0,|0,0,|0,0,|0,0,|0,0,|0,0,|0,0,,,,|0,0,0,0,0,0,|0,0,0,0,0,0,|||']
+  }
+
+  let totalNo = 0
+  let totalMoney = 0
+
+  function record (type, args, money) {
+    let nums = localStorage.getItem(`nums${type}`) || '{}'
+    nums = JSON.parse(nums)
+    args.forEach(item => {
+      let sum = nums[item] || 0
+      nums[item] = sum + +money
+    })
+    localStorage.setItem(`nums${type}`, JSON.stringify(nums))
+  }
+
+  export default {
+    name: 'app',
+    data() {
+      return {
+        server1: SERVER1,
+        server2: SERVER2,
+        server: SERVER || SERVER1 || SERVER2,
+        speed: 1000,
+        show: true,
+        no: '',
+        log: ''
+      }
+    },
+    watch: {
+      log(val, old) {
+        let scrollHeight = this.$refs.log.scrollHeight
+        this.$refs.log.scrollTop = scrollHeight
+      }
+    },
+    methods: {
+      // 切换
+      switchover() {
+          let server1 = this.server1 = this.server1.replace('/app.html', '')
+          let server2 = this.server2 = this.server2.replace('/app.html', '')
+          let server = this.server
+          if (server1 && server2) {
+            this.server = server === server1 ? server2 : server1
+          } else {
+            this.server = server1 || server2
+          }
+          localStorage.setItem('server1', server1)
+          localStorage.setItem('server2', server2)
+          this.refresh()
+        },
+        // 刷新
+        refresh() {
+          let server = this.server
+          if (!server) {
+            this.switchover()
+            return
+          }
+
+          localStorage.setItem('server', server)
+          this.$refs.iframe.src = `${server}/app.html`
+        },
+        // 买码
+        buy() {
+          let self = this
+          let server = this.server
+          let label = 'a'
+          let no = this.no.toUpperCase()
+          let nos = no.split(/[,|，]/)
+          let i = 0
+          let len = nos.length
+          let number = ''
+          let money = ''
+          let preMoney = 1
+          let numbers = ''
+          if (/wk/.test(server)) {
+            label = 'kk'
+          }
+          self.reqList = []
+          nos.forEach(async item => {
+            let result = ['']
+            let newResult = []
+            let items = ''
+
+            // 请求信息
+            let post_number_money = ''
+            let post_money = ''
+            let selectlogs = '0,1,'
+            let selectlogsclassid = ''
+            let selectnumbertotal_hidden = ''
+            let numLen = ''
+
+            money = item.match(/=(0\.5|\d+)$/)
+            number = money ? money[0] : ''
+
+            money = money ? money[1] : preMoney
+            number = item.replace(number, '')
+
+            number = number.replace(/\-+/, 'XX')
+            numbers = number.match(/\d+|[X]|[全]/g)
+            numLen = numbers.length
+            if (numLen === 4) {
+              numbers.forEach(item => {
+                item = item.replace('全', '0123456789')
+                selectlogs += item + ','
+                items = item.split('')
+                items.forEach(one => {
+                  result.forEach(temp => {
+                    newResult.push(temp + one)
+                  })
+                })
+                result = newResult.slice(0).sort()
+                newResult = []
+              })
+            } else if (numLen < 4) {
+              selectlogs += number.split('').join(',') + ','
+              result = [number]
+            } else {
+              self.log += '您输入的号码格式有误\n'
+              return
+            }
+
+            selectnumbertotal_hidden = result.length
+            post_number_money = result.join(',')
+            preMoney = post_money = +money
+            selectlogsclassid = 3 - (selectlogs.match(/X/g) || []).length
+            selectlogs = selectlogs.replace(/X/g, '')
+            selectlogs += suffix[label][selectlogsclassid - 1]
+
+            self.reqList.push({
+              post_number_money,
+              post_money,
+              selectlogsclassid,
+              selectnumbertotal_hidden,
+              selectlogs
+            })
+            record(selectlogsclassid, result, money)
+          })
+          this.ajax()
+        },
+        // 清除
+        clear() {
+          this.no = ''
+        },
+        // AI识别
+        recognition() {
+          let no = this.no.toUpperCase()
+          this.log = `原文本：\n${no}\n`
+
+          no += '组'
+          // [1] 替换错别字
+          no = no
+            .replace(/[—一－-]+/g, '-')
+            .replace(/[oO]/g, '0')
+            .replace(/[㐅*✘Ⅹ×？]/g, 'X')
+            .replace(/[、]+/g, '.')
+            .replace(/\-([,，=])/g, 'X$1')
+            .replace(/([,，=])\-/g, '$1X')
+            .replace(/＝/g, '=')
+            .replace(/[。]/g, ',')
+
+          // [2] 语义转换
+          let temp
+          let noArr
+          let tnum
+          let treplace
+
+          // 号码识别
+          while (temp = /(\d+头|\d+千位?|\d+百位?|\d+十位?)+(\d+个位?|\d+尾|\d+)?/.exec(no)) {
+            noArr = temp[0].match(/(\d+头|\d+千位?)?(\d+百位?)?(\d+十位?)?(\d+个位?|\d+尾|\d+)?/)
+            treplace = ''
+            for (let i = 1; i < 5; i++) {
+              tnum = noArr[i] ? noArr[i].match(/\d+/) : 'X'
+              treplace += `${tnum}.`
+            }
+            treplace = treplace
+              .replace(/\.?X\.?/g, 'X')
+              .replace(/XX/g, '-')
+            no = no.replace(temp[0], treplace)
+          }
+
+          // 汉字数字识别
+          while (temp = /[一二三四五六七八九十]+/.exec(no)) {
+            tnum = zh2num(temp[0])
+            no = no.replace(temp, tnum)
+          }
+
+          // 金额识别
+          while (temp = /[\(（各打]+\d+组?[）\)]?|\d+[组元块]/.exec(no)) {
+            tnum = temp[0].match(/\d+/)
+            no = no.replace(temp, `=${tnum},`)
+          }
+
+          // [3] 没用字符（如：空格、换行等）清理
+          no = no
+            .replace(/\s+/g, ',')
+            .replace(/[.，,=]+=/g, '=')
+            .replace(/[,，\.]{2,}/g, ',')
+            .replace(/[^\dXx全\.\-,，=]/g, '')
+            .replace(/[,，]$/, '')
+
+          // [4] 价格重置
+          no = no.match(/[\dX.全\-]+(=\d+)?/g)
+          let j = 0
+          let len = no.length
+          let first = -1
+          for (; j < len; j++) {
+            tnum = no[j].match(/=\d+/g)
+            if (!tnum && first === -1) {
+              first = j
+            } else if (tnum) {
+              no[first] += tnum[0]
+              first = -1
+            }
+          }
+          no = no.join(',')
+
+          this.no = no
+        },
+        // 发送请求
+        async ajax() {
+          totalMoney = 0
+          totalNo = 0
+          this.log = ''
+          for (let form of this.reqList) {
+            await this.kuaixuan(form)
+          }
+          this.log += `共${totalNo}笔，${totalMoney}元\n`
+          this.refresh()
+          let self = this
+          let timer1 = setTimeout(() => {
+            self.show = false
+            clearTimeout(timer1)
+          }, 800)
+          let timer2 = setTimeout(() => {
+            self.show = true
+            clearTimeout(timer2)
+          }, 9000)
+        },
+        // 快选
+        kuaixuan(form) {
+          let speed = this.speed
+          let self = this
+          return new Promise((resolve, reject) => {
+            form.action = 'soonselectnumber'
+            form.sizixian = '0'
+            form.zjzc = '0'
+            form.strarray = ''
+            form.lujingstat = '3'
+            let sform = qs.stringify(form)
+            let url = this.server + '/APPINDEXAJAX.PHP'
+            // let url = 'https://www.baidu.com'
+            let iframe = document.createElement("iframe")
+            url += `?${sform}`
+            iframe.src = url
+            iframe.onload = (event) => {
+              if (!event) {
+                reject('ERROR')
+              }
+              self.log += `${form.post_number_money}: ${form.post_money}元\n`
+              totalNo += +form.selectnumbertotal_hidden
+              totalMoney += form.selectnumbertotal_hidden * form.post_money
+              document.body.removeChild(iframe)
+              iframe.remove()
+              let timer = setTimeout(() => {
+                clearTimeout(timer)
+                resolve('OK')
+              }, speed)
+            }
+            document.body.appendChild(iframe)
+          })
+        },
+        // 读取缓存
+        getStorage () {
+          this.no = ''
+          for (let i = 1; i < 4; i++) {
+            this.no += localStorage.getItem(`nums${i}`) || '{}'
+            this.no += '|||'
+          }
+        },
+        // 清理缓存
+        removeStorage () {
+          for (let i = 1; i < 4; i++) {
+            localStorage.removeItem(`nums${i}`)
+          }
+          this.no = ''
+        }
+    }
+  }
+</script>
+
+<style lang="scss">
+  html,
+  body,
+  #app {
+    top: 0px;
+    left: 0px;
+    bottom: 0px;
+    right: 0px;
+    height: 100%;
+    overflow: hidden;
+    margin: 0;
+    padding: 0px;
+    border: 0px;
+    position: relative;
+    font-size: 12px;
+    font-family: arial;
+    min-width: 980px;
+  }
+  
+  .iframe {
+    height: 100%;
+    width: 100%;
+  }
+  
+  .tool-box {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: #FFFFFF;
+    margin: 20px;
+  }
+  
+  .big-btn {
+    width: 100px;
+    height: 40px;
+  }
+</style>
