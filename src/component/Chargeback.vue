@@ -38,7 +38,7 @@
         if (detailUrl[no]) {
           server += detailUrl[no]
           this.$emit('output', {
-            no: server
+            log: server
           })
           window.open(server)
         }

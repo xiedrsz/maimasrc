@@ -3,7 +3,7 @@
   <div>
     <ul>
       <li>
-        <button @click="buy">买码</button>
+        <button @click="buy()">买码</button>
         <button @click="clearUp">清空</button>
         <button @click="clear">清除</button>
         <button @click="recognition">AI识别</button>
@@ -40,8 +40,8 @@
         })
       },
       // 买码
-      buy () {
-        let no = this.no
+      buy (nosrc) {
+        let no = nosrc === undefined ? this.no : nosrc
         new Parser(no)
           .then(async (res) => {
             this.$emit('output', {

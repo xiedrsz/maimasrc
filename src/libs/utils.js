@@ -1,5 +1,6 @@
 import qs from 'qs'
 import _ from 'lodash'
+import moment from 'moment'
 import config from '../config'
 const { env } = config
 
@@ -154,7 +155,7 @@ function sleep (time) {
 // 吃码分析
 function chiMa (result) {
   // 赔付额度
-  let maxMoney = [8600, 8700, 5000]
+  let maxMoney = [8600, 8700, 29000]
   // 待退码id序列
   let tuimaid = localStorage.getItem('tuimaid')
   // 不可再吃号码列表
@@ -395,6 +396,22 @@ function analyze (mas) {
   profit = profit.filter(item => (item.money >= 0)).map(item => (item.rate))
   profit = _.sum(profit).toFixed(2)
   result += `全吃盈利概率:${profit}%\n`
+  // 吃码建议
+  let aveWin = +localStorage.getItem('aveWin')
+  let lossCoverage = +localStorage.getItem('lossCoverage')
+  let lossWin = +localStorage.getItem('lossWin')
+  let flag = true
+  // 盈利概率低于亏损平均
+  if (profit < lossWin) {
+    flag = false
+  }
+  // 中奖概率高于亏损平局，盈利概率低于平均
+  if (winR > lossCoverage && profit < aveWin) {
+    flag = false
+  }
+  if (!flag) {
+    result += '风险较高，不建议吃\n'
+  }
   // 风险控制分析
   // [1] 买爆头尾提醒
   let dontChi = localStorage.getItem('dontChi') || '[]'
@@ -414,7 +431,7 @@ function analyze (mas) {
   // [2] 控制最大亏损
   _.forEach(oddsList, ({no, money}) => {
     let odd = 8500
-    let Max = -12000
+    let Max = -15000
     let num = money < Max ? -~~(money / odd) : 0
     if (num) {
       num++
@@ -422,11 +439,12 @@ function analyze (mas) {
     }
   })
   result += '\n'
+  
   return result
 }
 
 // 中奖明细
-function lottery (detail, no) {
+function lottery (record, no) {
   if (!/^\d{4}/.test(no)) {
     return
   }
@@ -435,8 +453,87 @@ function lottery (detail, no) {
   let c = no[2]
   let d = no[3]
   let reg = new RegExp(`^[X${a}][X${b}][X${c}][X${d}]`)
-  let list = _.filter(_.keys(detail), item => (reg.test(item)))
-  return _.pick(detail, list)
+  let income = 0
+  let loss = 0
+  let log = ''
+  // 收入
+  income = overview(record)
+  income = _.sum(_.values(income))
+  // 赔付
+  record = _.pickBy(record, (val, key) => {
+    return reg.test(key)
+  })
+  _.forEach(record, (value, key) => {
+    value = _.map(value, ({dt, f, m}) => {
+      loss += f * m
+      return `${dt}: ${f}X${m}`
+    })
+    log += `${key}\n`
+    log += value.join('\n') + '\n'
+  })
+  income -= loss
+  log += `总收入: ${income}元`
+  return log
+}
+
+// 限制二字吃额
+function limit (record, money) {
+  let result = _.mapValues(record, (list, key) => {
+    let len = key.match(/X/g) || []
+    len = len.length
+    // 非二字
+    if (len !== 2) {
+      return list
+    }
+    list = _.reduce(list, (res, item) => {
+      let {f, m} = item
+      let total = _.sum(_.map(res, ({f, m}) => f * m))
+      let n
+      if (money - f > total) {
+        n = ~~((money - total) / f)
+        m = m < n ? m : n
+        _.assign(item, {
+          m
+        })
+        res.push(item)
+      }
+      return res
+    }, [])
+    return list
+  })
+  return result
+}
+
+// 吃码概览
+function overview (record) {
+  let result = _.mapValues(record, list => {
+    return _.sum(_.map(list, ({m}) => +m))
+  })
+  return result
+}
+
+// 时间限制
+function filterTime (record, endTime) {
+  let today = moment().format('YYYY-MM-DD')
+  console.log(today)
+  // let today = '2018-05-06'
+  let toYear = moment().format('YYYY')
+  endTime = `${today} ${endTime}`
+  let result = _.mapValues(record, (list, key) => {
+    list = _.filter(list, ({dt}) => {
+      return moment(`${toYear}-${dt}`).isBefore(endTime)
+    })
+    return list
+  })
+  return result
+}
+
+// 除空
+function filterNull (record) {
+  let result = _.pickBy(record, list => {
+    return list.length
+  })
+  return result
 }
 
 export {
@@ -451,5 +548,9 @@ export {
   tuiMa,
   clearUp,
   analyze,
-  lottery
+  lottery,
+  limit,
+  overview,
+  filterTime,
+  filterNull
 }

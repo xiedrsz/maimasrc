@@ -12,9 +12,9 @@
             <textarea ref="textarea" @blur="toTop" rows="5" cols="40" v-model='no' type="text" placeholder="格式：123.456X789=16" />
           </li>
         </ul>
-        <sell :no="no" :em="$refs" @output="update" />
+        <sell ref="sell" :no="no" :em="$refs" @output="update" />
         <chargeback :no="no" :em="$refs" @output="update" @clear="clear"/>
-        <rmsys :no="no" @output="update" />
+        <rmsys :no="no" :em="$refs" @output="update" />
       </div>
     </div>
   </div>
@@ -49,6 +49,9 @@
       },
       numd (val, old) {
         localStorage.setItem('numd', val)
+      },
+      server (val, old) {
+        console.log(val)
       }
     },
     components: {
@@ -56,6 +59,7 @@
     },
     mounted () {
       this.$refs.textarea.focus()
+      this.$refs.server.refresh()
     },
     methods: {
       // 输入框滚到顶部

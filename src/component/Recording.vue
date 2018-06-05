@@ -38,7 +38,7 @@
 
 <script>
   import _ from 'lodash'
-  import {lottery} from '../libs/utils'
+  import {lottery, overview, limit, filterTime, filterNull} from '../libs/utils'
   
   export default {
     name: 'recording',
@@ -108,6 +108,7 @@
         localStorage.removeItem('nums')
         localStorage.removeItem('numd')
         localStorage.removeItem('youLiao')
+        localStorage.removeItem('remain')
         this.$emit('output', {
           log: '缓存已全部删除'
         })
@@ -116,52 +117,38 @@
       overview () {
         let no = this.no
         let chiRecord = localStorage.getItem('chiRecord')
-        let list, total
+        let total
+        // 空
+        chiRecord = JSON.parse(chiRecord)
         if (!chiRecord) {
           this.$emit('output', {
             log: '吃码记录为空'
           })
           return
         }
-        chiRecord = JSON.parse(chiRecord)
+        // 过滤
         if (no) {
-          // 二字
           if (/二字?/.test(no)) {
-            no = _.filter(_.keys(chiRecord), no => {
-              let len = no.match(/X/g) || []
-              len = len.length
-              return len === 2
-            })
+            no = /^(\d*\X\d*){2}$/
           } else if (/三字?/.test(no)) {
-            no = _.filter(_.keys(chiRecord), no => {
-              let len = no.match(/X/g) || []
-              len = len.length
-              return len === 1
-            })
+            no = /^\d*\X\d*$/
           } else if (/四字?/.test(no)) {
-            no = _.filter(_.keys(chiRecord), no => {
-              let len = no.match(/X/g) || []
-              len = len.length
-              return len === 0
-            })
+            no = /^\d{4}$/
           } else {
-            no = no.toUpperCase()
-            no = no.split(/\,|\s/)
+            no = no.toUpperCase().split(/\,|\s/).join('|')
+            no = new RegExp(no)
           }
-          chiRecord = _.pick(chiRecord, no)
+          chiRecord = _.pickBy(chiRecord, (val, key) => no.test(key))
         }
-        list = _.map(_.keys(chiRecord), item => {
-          let n = item
-          let m = _.sum(_.map(chiRecord[item], ({m}) => +m))
-          return {n, m}
-        })
-        list = _.sortBy(list, 'm')
-        total = _.sum(_.map(list, ({m}) => +m))
-        list = _.map(list, ({n, m}) => `${n}=${m}`)
-        _.reverse(list)
-        list = list.join(',')
+        // 统计
+        chiRecord = overview(chiRecord)
+        total = _.sum(_.values(chiRecord))
+        // 转换
+        chiRecord = _.toPairs(chiRecord).sort((a, b) => b[1] - a[1])
+        chiRecord = _.map(chiRecord, ([n, m]) => `${n}=${m}`)
+        chiRecord = chiRecord.join(',')
         this.$emit('output', {
-          no: list,
+          no: chiRecord,
           log: `共${total}元`
         })
       },
@@ -189,21 +176,29 @@
       // 中奖明细
       lottery () {
         let no = this.no
-        let detail = localStorage.getItem('chiRecord') || '{}'
+        let record = localStorage.getItem('chiRecord') || '{}'
         let log = ''
-        detail = JSON.parse(detail)
-        detail = lottery(detail, no)
-        if (detail) {
-          log += '中奖明细如下：\n'
-          _.forEach(detail, (value, key) => {
-            value = _.map(value, ({dt, f, m}) => `${dt}: ${f}X${m}`)
-            log += `${key}\n`
-            log += value.join('\n') + '\n'
-          })
-          this.$emit('output', {
-            log
-          })
+        no = no.split(/\,|\s/)
+        let lotteryNo = no[0]
+        let quota = no[1]
+        let endTime = no[2]
+        record = JSON.parse(record)
+        // 时间上限
+        if (/\d{2}\:\d{2}(\:\d{2})?/.test(endTime)) {
+          record = filterTime(record, endTime)
         }
+        // 限额控制
+        if (/\d+/.test(quota)) {
+          record = limit(record, +quota)
+        }
+        // 除空
+        record = filterNull(record)
+        // 中奖明细
+        log += '中奖明细如下：\n'
+        log += lottery(record, lotteryNo)
+        this.$emit('output', {
+          log
+        })
       },
       // 清
       clear (type) {

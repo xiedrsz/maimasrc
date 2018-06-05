@@ -24,7 +24,7 @@ export default class Parser {
       let post_number_money = ''
       let numLen = ''
 
-      money = item.match(/=(0\.5|\d+)$/)
+      money = item.match(/=(\d+\.\d|\d+)$/)
       number = money ? money[0] : ''
 
       money = money ? +money[1] : preMoney
