@@ -4,8 +4,8 @@
     <ul>
       <li>
         <button @click="analyze">赢率分析</button>
-        <button @click="dontEat">不吃号码</button>
         <button @click="remain">打回</button>
+        <button @click="maxLimit">限额</button>
         <button @click="tongJi">统计数据</button>
       </li>
     </ul>
@@ -15,7 +15,7 @@
 <script>
   import _ from 'lodash'
   import Parser from '../libs/Parser'
-  import {analyze, limit, overview, filterTime, filterNull, soonselect} from '../libs/utils'
+  import {analyze, limit, overview, filterTime, filterNull, soonselect, limitOne} from '../libs/utils'
   
   // 字符串转对象 9999=99
   function toObj (str) {
@@ -68,6 +68,9 @@
         }
         // 除空
         record = filterNull(record)
+        // 单次限额
+        record = limitOne(record)
+        console.log(record)
         // 补回
         num2 = overview(record)
         buhui = _.mergeWith(num1, num2, (old, src) => {
@@ -82,15 +85,6 @@
         this.$emit('output', {
           log: result,
           no: buhui
-        })
-      },
-      // 不吃号码
-      dontEat () {
-        let dontChi = localStorage.getItem('dontChi') || '[]'
-        dontChi = JSON.parse(dontChi)
-        dontChi = dontChi.join(',')
-        this.$emit('output', {
-          log: `不可再吃号码如下：\n${dontChi}\n`
         })
       },
       // 有料, Todo 没什么用，暂时屏蔽
@@ -154,6 +148,25 @@
           this.$emit('output', {
             no: '',
             log: '没有要打回的号码'
+          })
+        }
+      },
+      // 限额
+      maxLimit () {
+        let no = this.no
+        let max
+        let log
+        if (!/^最大亏损限额为:\s?\d+元/.test(no)) {
+          max = localStorage.getItem('maxLoss') || 15000
+          log = `最大亏损限额为: ${max}元`
+          this.$emit('output', {
+            no: log
+          })
+        } else {
+          max = no.match(/\d+/)
+          localStorage.setItem('maxLoss', +max)
+          this.$emit('output', {
+            log: '设置成功'
           })
         }
       },

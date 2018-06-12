@@ -166,8 +166,10 @@ function chiMa (result) {
   let toBuy = localStorage.getItem('toBuy') || '[]'
   // 吃码记录
   let chiRecord = localStorage.getItem('chiRecord') || '{}'
-  let detailitem = result.match(/\[(\{[^\{^\}]+\}\,?\s*)+\]?/g)
-  detailitem = detailitem[0].replace(/\,$|\]$/, ']')
+  // let detailitem = result.match(/\[(\{[^\{^\}]+\}\,?\s*)+\]?/g)
+  let detailitem = result.match(/\[({[^{^}]+},?\s*)+\]?/g)
+  // detailitem = detailitem[0].replace(/\,$|\]$/, ']')
+  detailitem = detailitem[0].replace(/,$|\]$/, ']')
   tuimaid = tuimaid ? tuimaid.split('|') : []
   dontChi = JSON.parse(dontChi)
   youLiao = JSON.parse(youLiao)
@@ -258,7 +260,7 @@ function tuiMa (tuimaid, server) {
     url += `?${form}`
     iframe.src = url
     // 结果处理
-    iframe.onload = event => {
+    iframe.onload = () => {
       let chiRecord = localStorage.getItem('chiRecord')
       let list = []
       localStorage.removeItem('tuimaid')
@@ -300,7 +302,7 @@ function clearUp (server) {
     url += `?${form}`
     iframe.src = url
     // 结果处理
-    iframe.onload = event => {
+    iframe.onload = () => {
       iframe.remove()
       resolve(true)
       reject(false)
@@ -429,9 +431,9 @@ function analyze (mas) {
   result += '\n'
   result += '为降低风险建议买下如下号码\n'
   // [2] 控制最大亏损
+  let Max = -localStorage.getItem('maxLoss') || -15000
   _.forEach(oddsList, ({no, money}) => {
     let odd = 8500
-    let Max = -15000
     let num = money < Max ? -~~(money / odd) : 0
     if (num) {
       num++
@@ -491,7 +493,7 @@ function limit (record, money) {
       let n
       if (money - f > total) {
         n = ~~((money - total) / f)
-        m = m < n ? m : n
+        m = m < n ? m : n + ''
         _.assign(item, {
           m
         })
@@ -515,11 +517,10 @@ function overview (record) {
 // 时间限制
 function filterTime (record, endTime) {
   let today = moment().format('YYYY-MM-DD')
-  console.log(today)
-  // let today = '2018-05-06'
+  // let today = '2018-05-29'
   let toYear = moment().format('YYYY')
   endTime = `${today} ${endTime}`
-  let result = _.mapValues(record, (list, key) => {
+  let result = _.mapValues(record, list => {
     list = _.filter(list, ({dt}) => {
       return moment(`${toYear}-${dt}`).isBefore(endTime)
     })
@@ -532,6 +533,21 @@ function filterTime (record, endTime) {
 function filterNull (record) {
   let result = _.pickBy(record, list => {
     return list.length
+  })
+  return result
+}
+
+// 单笔最大限额控制, 针对二字
+function limitOne (record, maxMoney = 50) {
+  let result = _.mapValues(record, list => {
+    list = _.map(list, ({m, ...other}) => {
+      m = +m < maxMoney ? m : maxMoney + ''
+      return {
+        ...other,
+        m
+      }
+    })
+    return list
   })
   return result
 }
@@ -552,5 +568,6 @@ export {
   limit,
   overview,
   filterTime,
-  filterNull
+  filterNull,
+  limitOne
 }

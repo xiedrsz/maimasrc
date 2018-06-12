@@ -26,6 +26,9 @@
   const NUME = +localStorage.getItem('nume') || 0
   const NUMS = +localStorage.getItem('nums') || 0
   const NUMD = +localStorage.getItem('numd') || 0
+  /*import Record from './libs/Record'
+  new Record()
+      .overview(res => console.log(res))*/
   
   export default {
     name: 'app',

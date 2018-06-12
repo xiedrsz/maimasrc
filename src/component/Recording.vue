@@ -13,6 +13,7 @@
       <li>
         <button @click="overview">吃码概览</button>
         <button @click="readRecord">吃码记录</button>
+        <button @click="dontEat">不吃号码</button>
         <button @click="lottery">中奖明细</button>
       </li>
     </ul>
@@ -38,7 +39,7 @@
 
 <script>
   import _ from 'lodash'
-  import {lottery, overview, limit, filterTime, filterNull} from '../libs/utils'
+  import {lottery, overview, limit, filterTime, filterNull, limitOne} from '../libs/utils'
   
   export default {
     name: 'recording',
@@ -109,6 +110,7 @@
         localStorage.removeItem('numd')
         localStorage.removeItem('youLiao')
         localStorage.removeItem('remain')
+        localStorage.removeItem('maxLoss')
         this.$emit('output', {
           log: '缓存已全部删除'
         })
@@ -173,6 +175,15 @@
           no: result
         })
       },
+      // 不吃号码
+      dontEat () {
+        let dontChi = localStorage.getItem('dontChi') || '[]'
+        dontChi = JSON.parse(dontChi)
+        dontChi = dontChi.join(',')
+        this.$emit('output', {
+          log: `不可再吃号码如下：\n${dontChi}\n`
+        })
+      },
       // 中奖明细
       lottery () {
         let no = this.no
@@ -193,6 +204,8 @@
         }
         // 除空
         record = filterNull(record)
+        // 单次限额
+        record = limitOne(record)
         // 中奖明细
         log += '中奖明细如下：\n'
         log += lottery(record, lotteryNo)
