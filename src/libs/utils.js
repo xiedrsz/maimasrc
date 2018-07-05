@@ -430,8 +430,8 @@ function analyze (mas) {
   })
   result += '\n'
   result += '为降低风险建议买下如下号码\n'
-  // [2] 控制最大亏损
-  let Max = -localStorage.getItem('maxLoss') || -15000
+  // [2] 控制最大亏损, 12000
+  let Max = -localStorage.getItem('maxLoss') || -12000
   _.forEach(oddsList, ({no, money}) => {
     let odd = 8500
     let num = money < Max ? -~~(money / odd) : 0

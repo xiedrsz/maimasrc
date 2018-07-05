@@ -13,25 +13,55 @@
       <li>
         <button @click="overview">吃码概览</button>
         <button @click="readRecord">吃码记录</button>
-        <button @click="dontEat">不吃号码</button>
+        <!--<button @click="dontEat">不吃号码</button>-->
         <button @click="lottery">中奖明细</button>
+        <button @click="tongJi">统计分析</button>
       </li>
     </ul>
     <ul>
       <li>
+        <span>类型</span>
+        <span>已吃数量</span>
+        <span>已吃金额</span>
+        <span>未吃数量</span>
+      </li>
+      <li>
         <span>二字：</span>
+        <span>{{erN}}</span>
+        <span>{{erM}}</span>
         <span>{{nume}}</span>
         <span><button @click="clear('nume')">清</button></span>
       </li>
       <li>
+        <span>头尾：</span>
+        <span>{{twN}}</span>
+        <span>{{twM}}</span>
+      </li>
+      <li>
         <span>三字：</span>
+        <span>{{saN}}</span>
+        <span>{{saM}}</span>
         <span>{{nums}}</span>
         <span><button @click="clear('nums')">清</button></span>
       </li>
       <li>
         <span>四字：</span>
+        <span>{{siN}}</span>
+        <span>{{siM}}</span>
         <span>{{numd}}</span>
         <span><button @click="clear('numd')">清</button></span>
+      </li>
+      <li>
+        <span>中奖概率：</span>
+        <span>{{cover}}%</span>
+      </li>
+      <li>
+        <span>盈利概率：</span>
+        <span>{{wrate}}%</span>
+      </li>
+      <li>
+        <span>吃码建议：</span>
+        <span :class="{'red': !flag}">{{flag ? '可吃' : '不吃'}}</span>
       </li>
     </ul>
   </div>
@@ -39,6 +69,8 @@
 
 <script>
   import _ from 'lodash'
+  import Profit from '../libs/Profit'
+  import Reg from '../libs/Reg'
   import {lottery, overview, limit, filterTime, filterNull, limitOne} from '../libs/utils'
   
   export default {
@@ -59,6 +91,21 @@
       numd: {
         type: Number,
         default: 0
+      }
+    },
+    data () {
+      return {
+        flag: true,
+        cover: 0,
+        wrate: 0,
+        erN: 0,
+        twN: 0,
+        saN: 0,
+        siN: 0,
+        erM: 0,
+        twM: 0,
+        saM: 0,
+        siM: 0
       }
     },
     methods: {
@@ -175,7 +222,7 @@
           no: result
         })
       },
-      // 不吃号码
+      // Todo，不吃号码，少用，暂时屏蔽
       dontEat () {
         let dontChi = localStorage.getItem('dontChi') || '[]'
         dontChi = JSON.parse(dontChi)
@@ -183,6 +230,28 @@
         this.$emit('output', {
           log: `不可再吃号码如下：\n${dontChi}\n`
         })
+      },
+      // 统计数据
+      tongJi () {
+        let record = localStorage.getItem('chiRecord') || '{}'
+        record = JSON.parse(record)
+        let profit = new Profit(record)
+        // 决策
+        this.flag = profit.decision()
+        // 中奖概率
+        this.cover = profit.coverage()
+        // 盈利概率
+        this.wrate = profit.win()
+        // 吃码金额
+        this.erM = profit.eatMoney(key => Reg.erzift.test(key))
+        this.twM = profit.eatMoney(key => Reg.touwei.test(key))
+        this.saM = profit.eatMoney(key => Reg.sanzi.test(key))
+        this.siM = profit.eatMoney(key => Reg.sizi.test(key))
+        // 吃码数量
+        this.erN = profit.nos(key => Reg.erzift.test(key))
+        this.twN = profit.nos(key => Reg.touwei.test(key))
+        this.saN = profit.nos(key => Reg.sanzi.test(key))
+        this.siN = profit.nos(key => Reg.sizi.test(key))
       },
       // 中奖明细
       lottery () {

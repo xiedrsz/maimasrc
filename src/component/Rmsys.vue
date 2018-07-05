@@ -4,9 +4,8 @@
     <ul>
       <li>
         <button @click="analyze">赢率分析</button>
-        <button @click="remain">打回</button>
         <button @click="maxLimit">限额</button>
-        <button @click="tongJi">统计数据</button>
+        <button @click="execute">决策</button>
       </li>
     </ul>
   </div>
@@ -15,6 +14,9 @@
 <script>
   import _ from 'lodash'
   import Parser from '../libs/Parser'
+  import Record from '../libs/Record'
+  import Profit from '../libs/Profit'
+  import Reg from '../libs/Reg'
   import {analyze, limit, overview, filterTime, filterNull, soonselect, limitOne} from '../libs/utils'
   
   // 字符串转对象 9999=99
@@ -49,6 +51,8 @@
     methods: {
       // 赢率分析
       analyze () {
+        // Todo
+        // let no = this.no
         let no = this.no
         let record = localStorage.getItem('chiRecord') || '{}'
         let buhui = ''
@@ -121,16 +125,20 @@
             })
         }
       },
-      // 打回, 即买入
-      remain () {
+      // 决策
+      execute () {
+        let record = localStorage.getItem('chiRecord') || '{}'
+        record = JSON.parse(record)
+        let {flag, total, max, cover, wrate, back} = new Profit(record).execute()
+        let mess = `本次一共收入 ${total} 元\n中奖概率为 ${cover}%\n盈利概率为 ${wrate}%\n最大赔付金额为 ${max}元\n`
+        mess += flag ? '本次风险较低，吃了' : '本次风险较高，不吃'
+        let no = back = back.join(',')
         let remain = localStorage.getItem('remain') || '='
-        let nrmn = this.no || ''
-        let no = nrmn
-        if (!/^([\dX]{4}=\d+\,?)+$/.test(nrmn)) {
+        if (!/^([\dX]{4}=\d+\,?)+$/.test(back)) {
           return
         }
         // 新打回
-        nrmn = toObj(nrmn)
+        back = toObj(back)
         no = toObj(no)
         // 旧打回
         remain = toObj(remain)
@@ -141,12 +149,15 @@
           // 打回
           this.em.sell.buy(no)
           // 记录
-          _.mergeWith(remain, nrmn, (obj, src) => obj > src ? obj : src)
+          _.mergeWith(remain, back, (obj, src) => obj > src ? obj : src)
           remain = toStr(remain)
-          localStorage.setItem('remain', remain)
+          localStorage.setItem('remain', remain)          
+          this.$emit('output', {
+            no: mess
+          })
         } else {
           this.$emit('output', {
-            no: '',
+            no: mess,
             log: '没有要打回的号码'
           })
         }
@@ -157,7 +168,7 @@
         let max
         let log
         if (!/^最大亏损限额为:\s?\d+元/.test(no)) {
-          max = localStorage.getItem('maxLoss') || 15000
+          max = localStorage.getItem('maxLoss') || 12000
           log = `最大亏损限额为: ${max}元`
           this.$emit('output', {
             no: log
@@ -169,32 +180,6 @@
             log: '设置成功'
           })
         }
-      },
-      // 统计数据
-      tongJi () {
-        let no = this.no
-        let aveCoverage = localStorage.getItem('aveCoverage') || ''
-        let aveWin = localStorage.getItem('aveWin') || ''
-        let lossCoverage = localStorage.getItem('lossCoverage') || ''
-        let lossWin = localStorage.getItem('lossWin') || ''
-        let log = ''
-        let arr
-        if (!no) {
-          no = `aveCoverage=${aveCoverage} aveWin=${aveWin} lossCoverage=${lossCoverage} lossWin=${lossWin}`
-        } else {
-          arr = no.match(/\w+=(\d+(\.\d+)?)?/g) || []
-          _.forEach(arr, item => {
-            let label, value
-            item = item.split('=')
-            label = item[0]
-            value = item[1] || ''
-            localStorage.setItem(label, value)
-          })
-          log = '设置完成'
-        }
-        this.$emit('output', {
-          no, log
-        })
       }
     }
   }

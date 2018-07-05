@@ -28,7 +28,9 @@
   const NUMD = +localStorage.getItem('numd') || 0
   /*import Record from './libs/Record'
   new Record()
-      .overview(res => console.log(res))*/
+    .limitOne()
+    .filterNull()
+    .lottery('5503')*/
   
   export default {
     name: 'app',
