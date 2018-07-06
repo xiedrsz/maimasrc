@@ -3,7 +3,7 @@
   <div>
     <ul>
       <li>
-        <button @click="analyze">赢率分析</button>
+        <!--<button @click="analyze">赢率分析</button>-->
         <button @click="maxLimit">限额</button>
         <button @click="execute">决策</button>
       </li>

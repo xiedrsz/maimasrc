@@ -140,24 +140,26 @@ export default class Profit extends Record {
    * @return {boolean} 是否吃得
    * @example
    * 目前决策策略
-   * [0] 前提条件：二字单笔最大额在50笔内
+   * [0] 前提条件：二字单笔最大额在10笔内
    * [1] 盈利概率小于65，不吃
    * [2] 中奖概率高于亏损平均，盈利概率低于平均, 不吃，暂时屏蔽
+   * [3] 10 50 交集
    */
   decision () {
     let record = _.cloneDeep(this.record)
+    // 单笔限额 10 笔
+    this.limitOne(10)
+    this.calcLoss()
+    let wrate1 = this.win()
+    this.restore(record)
+    // 单笔限额 50 笔
     this.limitOne()
     this.calcLoss()
+    let wrate2 = this.win()
     this.restore(record)
-    // let cover = this.coverage()
-    let wrate = this.win()
-    if (wrate < 65) {
+    if (wrate1 < 65 || wrate2 < 65) {
       return false
     }
-    // Todo 收益低，暂时去掉
-    /* if (cover > LossCover && wrate < AveWin) {
-      return false
-    } */
     return true
   }
 
@@ -177,7 +179,8 @@ export default class Profit extends Record {
     let oldOver = this.overview()
     let newOver, max, loss, back, big
     // [1] 二字单笔吃额控制，默认最大50笔
-    this.limitOne()
+    this.limitOne(50)
+    // this.limitOne(10)
     // [2] 二字最大赔付金额，默认比过滤后的总收入约高3000元，Todo
     /**
      * 二字限额.
