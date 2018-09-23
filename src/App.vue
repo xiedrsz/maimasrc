@@ -5,7 +5,7 @@
       <button @click="show = !show" class="big-btn">{{show ? '收起' : '展开'}}</button>
       <div v-show="show">
         <server-url ref="server" v-model="server" />
-        <recording :no="no" :nume="nume" :nums="nums" :numd="numd" @output="update" @clear="clear"/>
+        <recording :no="no" :em="$refs" :nume="nume" :nums="nums" :numd="numd" @output="update" @clear="clear"/>
         <Log ref="log" :log="log" />
         <ul>
           <li>

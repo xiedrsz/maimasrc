@@ -4,6 +4,7 @@
     <ul>
       <li>
         <button @click="getDetail">下注明细</button>
+        <button @click="backward">退奖</button>
         <button @click="chiMa">吃码分析</button>
         <button @click="tuiMa">退码</button>
       </li>
@@ -13,6 +14,7 @@
 
 <script>
   import _ from 'lodash'
+  import Record from '../libs/Record'
   import {detailUrl, chiMa, tuiMa, sleep, soonselect} from '../libs/utils'
   
   export default {
@@ -42,6 +44,22 @@
           })
           window.open(server)
         }
+      },
+      // 退奖
+      backward () {
+        let no = this.no
+        let [cmd, num] = no.split(/,|，/)
+        let chiRecord = localStorage.getItem('chiRecord') || '{}'
+        chiRecord = JSON.parse(chiRecord)
+        let record = new Record(chiRecord)
+        let mess = record.backward(cmd, num) || ''
+        if (~mess.indexOf('有如下号码可能在降叔盘中')) {
+          record = record.value()
+          localStorage.setItem('chiRecord', JSON.stringify(record))
+        }
+        this.$emit('output', {
+          no: mess
+        })
       },
       // 吃码
       chiMa () {

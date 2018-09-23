@@ -209,12 +209,39 @@ export default class Profit extends Record {
   }
 
   /**
+   * 少吃.
+   * @return {string[]} 要打回的号码
+   * @example
+   * 目前风险控制策略:
+   * [1] 二字吃掉被打次数小于或等于3次的号码
+   * [2] 三字、四字全部吃
+   * [3] 控制二字最大赔付暂不控制
+   * 返回结果如下:
+   * ['1234=1', '2345=2', ...]
+   */
+  little () {
+		let oldOver = this.overview()
+		let nums = this.nums()
+    let keys = []
+    _.forEach(nums, (val, key) => {
+      if (val < 4) {
+        keys.push(key)
+      }
+    })
+    this.filterNo((val, key) => ~keys.indexOf(key))
+		let newOver = this.overview()
+		let back = overDiff(newOver, oldOver)
+		return back
+  }
+
+  /**
    * 决策执行.
+   * @param {boolean} [force] 强制少吃
    * @return {Object} 决策执行结果
    * @example
    * 目前决策执行执行策略如下：
    * [1] 决策为true, 可吃
-   * [2] 决策为false, 风险过高，不吃
+   * [2] 决策为false, 风险过高，少吃（少吃指被打次数少于等于3次）
    * 返回结果如下：
    * {
    *   flag: true,
@@ -225,26 +252,25 @@ export default class Profit extends Record {
    *   back: ['1XX1=120', ...]
    * }
    */
-  execute () {
-    let oldOver = this.overview()
-    let flag = this.decision()
-    // 中奖概率 盈利概率为决策时概率
-    let cover = this.coverage()
-    let wrate = this.win()
-    let back = this.riskControl()
-    let {max, total} = this
-    let result = {
-      flag, max, total, cover, wrate
-    }
-    if (flag) {
-      // console.log('可吃')
-      result.back = back
-    } else {
-      // console.log('不可吃')
-      oldOver = _.map(oldOver, (m, n) => `${n}=${m}`)
-      result.back = oldOver
-    }
-    return result
+  execute (force) {
+		let record = _.cloneDeep(this.record)
+		let flag = this.decision()
+		let cover, wrate, back, max, total
+		if (!force && flag) {
+			back = this.riskControl()
+			max = this.max
+		} else {
+			this.restore(record)
+			back = this.little()
+			this.calcLoss()
+			max = '-'
+		}
+		cover = this.coverage()
+		wrate = this.win()
+		total = this.total
+		return {
+			flag, max, total, cover, wrate, back
+		}
   }
 
   /**

@@ -14,6 +14,7 @@
 
 <script>
   import _ from 'lodash'
+  import axios from 'axios'
   import recognition from '../libs/recognition'
   import Parser from '../libs/Parser'
   import {sleep, clearUp, soonselect, record} from '../libs/utils'

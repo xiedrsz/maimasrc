@@ -4,6 +4,7 @@
     <ul>
       <li>
         <button @click="saveStorage">修改记录</button>
+        <button @click="execute">决策</button>
         <button @click="setStorage">更换记录</button>
         <button @click="removeStorage">清理缓存</button>
         <button @click="getStorage">卖码记录</button>
@@ -72,7 +73,22 @@
   import Profit from '../libs/Profit'
   import Reg from '../libs/Reg'
   import {lottery, overview, limit, filterTime, filterNull, limitOne} from '../libs/utils'
+
+  // 字符串转对象 9999=99
+  function toObj (str) {
+    let result = str.split(',').map(item => {
+      return item.split('=')
+    })
+    result = _.fromPairs(result)
+    delete result['']
+    return result
+  }
   
+  // 对象转字符串
+  function toStr (obj) {
+    return _.toPairs(obj).filter(([no, money]) => money > 0).map(([no, money]) => `${no}=${money}`).join(',')
+  }
+
   export default {
     name: 'recording',
     props: {
@@ -91,6 +107,12 @@
       numd: {
         type: Number,
         default: 0
+      },
+      em: {
+        type: Object,
+        default () {
+          return {}
+        }
       }
     },
     data () {
@@ -144,6 +166,45 @@
         this.$emit('output', {
           no: result
         })
+      },
+      // 决策
+      execute () {
+        let tNo = this.no
+        let force = '少吃' === tNo
+        let record = localStorage.getItem('chiRecord') || '{}'
+        record = JSON.parse(record)
+        let {flag, total, max, cover, wrate, back} = new Profit(record).execute(force)
+        let mess = `${force ? '本次执行强制少吃\n' : ''}本次一共收入 ${total} 元\n中奖概率为 ${cover}%\n盈利概率为 ${wrate}%\n最大赔付金额为 ${max}元\n`
+        mess += flag ? '本次风险较低，吃了' : '本次风险较高，少吃'
+        let no = back = back.join(',')
+        let remain = localStorage.getItem('remain') || '='
+        if (!/^([\dX]{4}=\d+\,?)+$/.test(back)) {
+          return
+        }
+        // 新打回
+        back = toObj(back)
+        no = toObj(no)
+        // 旧打回
+        remain = toObj(remain)
+        // 比较
+        _.mergeWith(no, remain, (obj, src) => obj - src)
+        no = toStr(no)
+        if (no) {
+          // 打回
+          this.em.sell.buy(no)
+          // 记录
+          _.mergeWith(remain, back, (obj, src) => obj > src ? obj : src)
+          remain = toStr(remain)
+          localStorage.setItem('remain', remain)          
+          this.$emit('output', {
+            no: mess
+          })
+        } else {
+          this.$emit('output', {
+            no: mess,
+            log: '没有要打回的号码'
+          })
+        }
       },
       // 清理缓存
       removeStorage () {
@@ -255,30 +316,24 @@
       },
       // 中奖明细
       lottery () {
-        let no = this.no
-        let record = localStorage.getItem('chiRecord') || '{}'
-        let log = ''
-        no = no.split(/\,|\s/)
-        let lotteryNo = no[0]
-        let quota = no[1]
-        let endTime = no[2]
+				let no = this.no
+				if (!/^\d{4}$/.test(no)) {
+					return
+				}
+				let reg = Reg.kaima(no)
+				let record = localStorage.getItem('chiRecord') || '{}'
         record = JSON.parse(record)
-        // 时间上限
-        if (/\d{2}\:\d{2}(\:\d{2})?/.test(endTime)) {
-          record = filterTime(record, endTime)
-        }
-        // 限额控制
-        if (/\d+/.test(quota)) {
-          record = limit(record, +quota)
-        }
-        // 除空
-        record = filterNull(record)
-        // 单次限额
-        record = limitOne(record)
-        // 中奖明细
-        log += '中奖明细如下：\n'
-        log += lottery(record, lotteryNo)
-        this.$emit('output', {
+        let profit = new Profit(record)
+				profit.execute()
+				let rec = profit.filterNo((val, key) => reg.test(key)).value()
+				let log = '中奖明细如下：\n'
+				let inc = profit.income(no)
+				_.forEach(rec, (list, key) => {
+					log += `${key}\n`
+					log += _.map(list, ({f, m, dt}) => `${dt}: ${f}X${m}=${f * m}`).join('\n') + '\n'
+				})
+				log += `总收入：${inc}元\n`
+				this.$emit('output', {
           log
         })
       },

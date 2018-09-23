@@ -1,18 +1,18 @@
 <template>
   <ul>
     <li>
+      当前服务器是： {{server}}
+      <span><button @click="refresh">刷新</button></span>
+      <span><button @click="switchover">切换</button></span>
+    </li>
+    <li>
       <span>服务器1</span>
       <input v-model='server1' type="text" />
     </li>
     <li>
       <span>服务器2</span>
       <input v-model='server2' type="text" />
-    </li>
-    <li>
-      当前服务器是： {{server}}
-      <span><button @click="refresh">刷新</button></span>
-      <span><button @click="switchover">切换</button></span>
-    </li>
+    </li>    
   </ul>
 </template>
 <script>
