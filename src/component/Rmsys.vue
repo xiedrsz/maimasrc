@@ -110,8 +110,10 @@
         }
         no = +no.match(/\d+/) || 50
         let result = record.bigAmount(no)
+        result = result.join(' ')
         this.$emit('output', {
-          log: result.join(' ')
+          log: result,
+          no: result
         })
       }
     }

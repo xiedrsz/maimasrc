@@ -155,7 +155,7 @@ function sleep (time) {
 // 吃码分析
 function chiMa (result) {
   // 赔付额度
-  let maxMoney = [8600, 8700, 29000]
+  let maxMoney = [8600, 8700, 47500]
   // 待退码id序列
   let tuimaid = localStorage.getItem('tuimaid')
   // 不可再吃号码列表
