@@ -15,7 +15,7 @@
 <script>
   import _ from 'lodash'
   import Record from '../libs/Record'
-  import {detailUrl, chiMa, tuiMa, sleep, soonselect} from '../libs/utils'
+  import {detailUrl, chiMa, tuiMa, sleep} from '../libs/utils'
   
   export default {
     name: 'chargeback',
@@ -105,10 +105,6 @@
           await sleep(1000)
           post_number_money = _.map(toBuy, ({n, m}) => `${n}|${m}`).join(',')
           log += `本次应补上号码有\n${post_number_money.replace(/\|/g, '=')}\n`
-          await soonselect({
-            post_number_money,
-            selectnumbertotal_hidden
-          }, server)
           localStorage.removeItem('toBuy')
           sleep(2000).then(() => {
             this.em.server.refresh()

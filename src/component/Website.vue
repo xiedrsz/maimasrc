@@ -15,7 +15,8 @@
     computed: {
       url () {
         let server = this.server
-        return server ? `${server}/app.html` : ''
+        // return server ? `${server}/app.html` : ''
+        return server ? server : ''
       }
     }
   }

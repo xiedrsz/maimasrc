@@ -1,6 +1,7 @@
 import qs from 'qs'
 import _ from 'lodash'
 import moment from 'moment'
+import axios from 'axios'
 import config from '../config'
 const { env } = config
 
@@ -47,9 +48,9 @@ function record (list) {
   let numd = 0
   let maRecord = localStorage.getItem('maRecord') || '{}'
   maRecord = JSON.parse(maRecord)
-  _.forEach(list, item => {
-    let n = item.match(/[\dX]{4}/)[0]
-    let m = +item.replace(`${n}|`, '')
+  _.forEach(list, ({bet_no, bet_money}) => {
+    let n = bet_no
+    let m = +bet_money
     let t = n.match(/X/g) || []
     t = t.length;
     (t === 2) && nume++;
@@ -95,46 +96,6 @@ function singleKX (form, server) {
       resolve({
         log, totalNo, totalMoney
       })
-    }
-    // 发送请求
-    document.body.appendChild(iframe)
-  })
-}
-
-// 快选，升级版
-function soonselect (form, server) {
-  return new Promise((resolve, reject) => {
-    let iframe = document.createElement("iframe")
-    let url = env === 'pro' ? `${server}/appindexajax.php` : 'http://www.runoob.com/try/ajax/jsonp.php?jsoncallback=callbackFunction'
-    let sform
-    // 生成请求地址
-    _.assign(form, {
-      action: 'soonselectnumber',
-      post_money: '',
-      sizixian: '',
-      selectlogsclassid: '0',
-      zjzc: '0',
-      selectlogs: '',
-      strarray: '',
-      lujingstat: '4',
-      versionName: '0.0.1'
-    })
-    sform = qs.stringify(form)
-    url += `?${sform}`
-    iframe.src = url
-    // 结果处理
-    iframe.onload = () => {
-      let {post_number_money, selectnumbertotal_hidden } = form
-      let list = post_number_money.split(',')
-      let money = _.map(list, item => +item.replace(/[\dX]{4}\|/, ''))
-      let log
-      money = _.sum(money)
-      list = _.map(list, item => (item.replace('|', ': ') + '元'))
-      list = list.join('\n')
-      log = `本次共买${selectnumbertotal_hidden}笔, ${money}元\n详情如下: \n${list}\n`
-      iframe.remove()
-      resolve(log)
-      reject(false)
     }
     // 发送请求
     document.body.appendChild(iframe)
@@ -294,27 +255,10 @@ function tuiMa (tuimaid, server) {
 
 // 发送清空请求
 function clearUp (server) {
-   return new Promise((resolve, reject) => {
-    let iframe = document.createElement("iframe")
-    let url = env === 'pro' ? `${server}/ajax.php` : 'http://www.runoob.com/try/ajax/jsonp.php?jsoncallback=callbackFunction'
-    let form = {
-      action: 'soonprintstat',
-      inajax: 1,
-      sid: ''
-    }
-    // 生成请求地址
-    form = qs.stringify(form)
-    url += `?${form}`
-    iframe.src = url
-    // 结果处理
-    iframe.onload = () => {
-      iframe.remove()
-      resolve(true)
-      reject(false)
-    }
-    // 发送请求
-    document.body.appendChild(iframe)
-  })
+  let path = server.match(/\(S[(\w)]+/) + ''
+  let time = (new Date).getTime()
+  let url = `/${path}/Member/CleanPrint?_=${time}`
+  return axios.get(url)
 }
 
 // 赢率分析， 待优化
@@ -557,13 +501,48 @@ function limitOne (record, maxMoney = 50) {
   return result
 }
 
+// 新版卖马， 发送post请求
+function batchBet (server, bets) {
+  let path = server.match(/\(S[(\w)]+/) + ''
+  let url = `/${path}/Member/BatchBet`
+  let TotalCount = bets.length
+  let TotalBetMoney = _.sumBy(bets, ({bet_money}) => +bet_money)
+  let data = {
+    bets: JSON.stringify(bets),
+    way: 103,
+    guid: '',
+    is_package: 0,
+    TotalCount,
+    TotalBetMoney,
+    vs: 33
+  }
+  // 发送请求
+  return axios
+          .post(url, data, {
+            transformRequest: [data => {
+              return qs.stringify(data)
+            }],
+            headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'}
+          })
+          .then(res => {
+            let Data = res.data.Data
+            if (!Data || Data.CompletedStatus !== 1) {
+              return res.data
+            }
+            let list = _.map(bets, ({bet_no, bet_money}) => `${bet_no}: ${bet_money}元`).join('\n')
+            let log = `本次共买${TotalCount}笔, ${TotalBetMoney}元\n详情如下: \n${list}`
+            return log
+          }).catch(() => {
+            return '下码失败\n'
+          })
+}
+
 export {
   suffix,
   detailUrl,
   uuid,
   record,
   singleKX,
-  soonselect,
   sleep,
   chiMa,
   tuiMa,
@@ -574,5 +553,6 @@ export {
   overview,
   filterTime,
   filterNull,
-  limitOne
+  limitOne,
+  batchBet
 }

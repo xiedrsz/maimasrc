@@ -1,21 +1,29 @@
-import { suffix, record } from './utils'
+const PT = {
+  'OOXX': 1, 
+  'OXOX': 2, 
+  'OXXO': 3, 
+  'XOXO': 4, 
+  'XOOX': 5, 
+  'XXOO': 6,
+  'OOOX': 7, 
+  'OOXO': 8, 
+  'OXOO': 9, 
+  'XOOO': 10, 
+  'OOOO': 11
+}
 
 export default class Parser {
-  constructor (no, server) {
+  constructor (no) {
     this.result = []
     this.error = false
     let self = this
-    let label = /wk/.test(server) ? 'kk' : 'a'
-    let i = 0
     let preMoney = 1
     let money = ''
     let number = ''
     let numbers = ''
-    let len
     let nos
     no = no.toUpperCase()
     nos = no.split(/[,|，]/)
-    len = nos.length
     nos.forEach(item => {
       let result = ['']
       let newResult = []
@@ -30,7 +38,7 @@ export default class Parser {
       money = money ? +money[1] : preMoney
       number = item.replace(number, '')
 
-      number = number.replace(/\-+/, 'XX')
+      number = number.replace(/-+/, 'XX')
       numbers = number.match(/\d+|[X]|[全]/g)
       numLen = numbers.length
       if (numLen === 4) {
@@ -53,7 +61,7 @@ export default class Parser {
       }
       post_number_money = result.join(',')
       // 校验
-      if (!/^[\dX]{4}(\,[\dX]{4})*$/.test(post_number_money)) {
+      if (!/^[\dX]{4}(,[\dX]{4})*$/.test(post_number_money)) {
         self.error = `您输入的号码格式有误,当前解析结果如下\n${post_number_money}\n`
         return
       }
@@ -72,7 +80,15 @@ export default class Parser {
     if (result.length) {
       result.forEach(({money, post_number_money}) => {
         let temp = post_number_money.split(',')
-        temp = temp.map(no => `${no}|${money}`)
+        temp = temp.map(no => {
+          let tmp = no.replace(/\d/g, 'O')
+          let dict_no_type_id = PT[tmp] || ''
+          return {
+            dict_no_type_id,
+            bet_no: no,
+            bet_money: money + ''
+          }
+        })
         list = list.concat(temp)
       })
       func(list)

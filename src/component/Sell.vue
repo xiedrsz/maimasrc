@@ -13,12 +13,10 @@
 </template>
 
 <script>
-  import _ from 'lodash'
-  import axios from 'axios'
   import recognition from '../libs/recognition'
   import Parser from '../libs/Parser'
-  import {sleep, clearUp, soonselect, record} from '../libs/utils'
-  
+  import {sleep, clearUp, record, batchBet} from '../libs/utils'
+
   export default {
     name: 'sell',
     props: {
@@ -48,17 +46,16 @@
             this.$emit('output', {
               no: ''
             })
-            let selectnumbertotal_hidden = res.length
-            let post_number_money = res.join(',')
             let server = localStorage.getItem('server') || ''
-            let log = await soonselect({
-              post_number_money,
-              selectnumbertotal_hidden
-            }, server)
+            let log = await batchBet(server, res)
             log += `原输入为:\n${no}\n`
             this.$emit('output', {
               log
             })
+            // 下马失败
+            if (!/本次共买/.test(log)) {
+              return
+            }
             // 刷新
             this.em.server.refresh()
             sleep(800).then(() => {
